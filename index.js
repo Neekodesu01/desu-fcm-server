@@ -5,8 +5,16 @@ const { GoogleAuth } = require("google-auth-library");
 const app = express();
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("✅ Desu FCM server is running!");
+});
+
 app.post("/send-fcm", async (req, res) => {
   const { token, title, body } = req.body;
+
+  if (!token || !title || !body) {
+    return res.status(400).json({ error: "Missing token, title, or body" });
+  }
 
   try {
     const auth = new GoogleAuth({
@@ -15,7 +23,7 @@ app.post("/send-fcm", async (req, res) => {
     });
 
     const client = await auth.getClient();
-    const projectId = await auth.getProjectId();
+    const projectId = "test-1e2b5"; // ✅ Project ID của bạn
 
     const message = {
       message: {
@@ -25,23 +33,21 @@ app.post("/send-fcm", async (req, res) => {
     };
 
     const response = await client.request({
-      url: `https://fcm.googleapis.com/v1/projects/test-1e2b5/messages:send`,
+      url: `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
       method: "POST",
       data: message
     });
 
     res.json({ success: true, response: response.data });
   } catch (error) {
-    console.error("FCM error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to send FCM" });
+    const firebaseError = error.response?.data || error.message;
+    console.error("FCM error:", firebaseError);
+    res.status(500).json({ error: firebaseError });
   }
-});
-
-app.get("/", (req, res) => {
-  res.send("✅ Desu FCM server is running!");
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
